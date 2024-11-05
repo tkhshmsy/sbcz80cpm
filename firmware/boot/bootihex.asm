@@ -1,7 +1,7 @@
 ;
 ; intel hex loader as 2nd boot loader
 ;
-; no checked: record-tyoe, checksum
+; no checked: record-type
 ;
                 .z80
 UARTST          .equ    080h
