@@ -61,6 +61,17 @@ cat init.obj basic.obj > msbasic.bin
 Makefile  README.md  basic.asm  basic.lst  basic.obj  init.asm  init.lst  init.obj  msbasic.bin
 ```
 
+### Setup
+
+1. Copy `msbasic.bin` into `/basic` directory in SDcard.
+2. Set up `/boot.cfg`
+   1. set `/boot2nd.bin` as 2nd boot loader
+      1. the general 2nd boot loader loads too many bytes, but it's safe.
+   2. set `/basic/msbasic.bin` as main image
+   3. set `/basic` as prefix to access disk images
+      1. this is not neccessary, but recommended to avoid conflicts.
+3. then, restart sbcz80cpm, and select above setting.
+
 ## References
 * [Grant's homebuilt electronics](http://searle.x10host.com/)
   * [Grant's 7-chip Z80 computer](http://searle.x10host.com/z80/SimpleZ80.html)
