@@ -22,7 +22,7 @@ the I/O device for sbcz80cpm powered by [ATMEGA4809](https://www.microchip.com/e
     * other i2c devices
   * SPI
     * SD card, formatted VFAT/FAT32 
-* for Z80
+* for _Z80_
   * /WAIT, /IOREQ
   * /WR
   * /RD
@@ -49,22 +49,24 @@ However, as the _I/O Engine_(ATMEGA4809) has not enough I/O ports for address bu
 3. reset _Z80_, start _IPL_ from 0x0000
 4. (_I/O Engine_ starts main loop)
 5. _IPL_ (`/boot1st.bin`) is executed
-   1. read 256 times from I/O port 0x8F
+   1. write 0x02 to I/O port 0x8F to prepare the binary of '2nd boot loader'
+   2. read 256 times from I/O port 0x8F
       1. I/O Engine returns binary of _2nd boot loader_
-   2. write each bytes from 0xFF00 to 0xFFFF.
-   3. jump to 0xFF00
+   3. write each bytes from 0xFF00 to 0xFFFF.
+   4. jump to 0xFF00
 6. _2nd boot loader_ (e.g. `/boot2nd.bin`) is executed
-   1. read from I/O port 0x8F
+   1. write 0x03 to I/O port 0x8F to prepare the binary of 'main image'
+   2. read 32768 times from I/O port 0x8F
       1. I/O Engine returns binary of _main image_
-   2. write each bytes from 0x0000 to 0x7FFF.
-   3. jump to 0x0000
+   3. write each bytes from 0x0000 to 0x7FFF.
+   4. jump to 0x0000
 
 At here, the _IPL_ (boot1st.bin) has to be less than 16 bytes of code. Which is quite possible with the extra instructions of _Z80_.
-Similarly, the _2nd Boot Loader_ has also to be less than 256 bytes of code, but for the Z80, 256 bytes is enough space to perform various operations.
+Similarly, the _2nd Boot Loader_ has also to be less than 256 bytes of code, but for the _Z80_, 256 bytes is enough space to perform various operations.
 
-### I/O access sequence
+### I/O sequence
 The _I/O Engine_ needs to respond to IN/OUT instructions of _Z80_.
-However, even though the _I/O Engine_ is running at 20MHz, it is still too slow to respond to the _Z80_ without WAITing.
+However, even though the _I/O Engine_ is running at 20MHz, it is still too slow to respond to the _Z80_ without WAIT.
 
 So, it is solved this in the same way as other similar projects (e.g. [Z80MBC2](https://github.com/SuperFabius/Z80-MBC2), [Z80MBC3](https://github.com/eprive/Z80-MBC3)).
 
@@ -74,22 +76,24 @@ So, it is solved this in the same way as other similar projects (e.g. [Z80MBC2](
    3. IN/OUT command-cycle is 'T1, T2, TW, T3', _Z80_ waits until /WAIT =1.
       1. refer to [Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf) page 11
       2. in TW cycle, /RD,/WR, Address and Data is already asserted.
-2. _I/O Engine_ reads /WR, /RD, Address and Data bus to execute it's function.
+2. _I/O Engine_ reads /WR, /RD, Address and Data buses to execute it's API.
+   1. /WR = 0 is asserted, it is a 'write' operation. _I/O Engine_ reads from Data bus.
+   2. /RD = 0 is asserted, it is a 'read' operation. _I/O Engine_ changes Data bus to output, and outputs the data.
 3. _I/O Engine_ releases bus,
    1. asserts /BUSREQ = 0
-   2. release Data bus if the case that _I/O Engine_ was output any data.
-   3. asserts /WAIT = 1 as output port (at here, still /IOREQ = 0 yet)
+   2. asserts /WAIT = 1 as output port (at here, still /IOREQ = 0 yet)
       1. _Z80_ start to continues executing the T3 cycle and the next instruction.
       2. But because /BUSREQ = 0, _Z80_ waits at the head of T1 in M1 cycle of the next instruction.
          1.  refer to [Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf) page 12
-   4. _Z80_ is released its buses and waits until /BUSACK = 0.
-   5. release /WAIT = High-Z as input port.
-   6. asserts /BUSREQ = 1 to release all buses.
+         2. _Z80_ does not touch its buses yet and waits until /BUSACK = 0.
+   3. release Data bus = High-Z as input port if the case that _I/O Engine_ was output any data.
+   4. release /WAIT = High-Z as input port.
+   5. asserts /BUSREQ = 1 to release all buses and wake up _Z80_.
 4. _Z80_ continues to next cycle...
 
 ## Boot configuration
 At booting, _I/O Engine_ read `/boot.cfg` from SD card.
-`boot.cfg` is written in the following TSV (Tab Separated Value) format and contains the following items.
+`boot.cfg` is written in the TSV (Tab Separated Value) format and contains the following items.
 
 * (1) the title of the setting
   * e.g. `CP/M 2.2`
@@ -105,34 +109,41 @@ The _prefix_ in the 4th item is used for creating _the image-filename_ of _the f
 * `prefix` + `/disk` + \<disk no.\> + `.img`
 
 
-## I/O port API
-Mainly for CP/M, the _I/O Engine_ provides an API centered around FloppyDisk emulation.
+## API as I/O device
+Mainly for CP/M, the _I/O Engine_ provides API centered around FloppyDisk emulation.
 It is placed under 8-bit addresses as a _Z80_'s I/O device.
 
-About floppy-disk emulation, the default setting is set as _ibm-3740_ format as follows:
-* max tracks: 77 (allows 0-76)
-* max sectors: 26 (allows 0-25)
+About floppy-disk emulation, the default setting is _ibm-3740 format_ as follows:
+* tracks per disk: 77 (allows 0-76)
+* sectors per track: 26 (allows 0-25)
 * sector length: 128 bytes
 
 ### for READ
 | Address | Function | Description |
 |---------|----------|-------------|
-| 0x80    | UARTST   | the status of UART |
+| 0x80    | UARTST   | return the status of UART |
 | 0x81    | UART     | receive from UART |
-| 0x82    | SELDSK   | return the number of current Disk |
+| 0x82    | SELDSK   | return the number of current disk |
 | 0x83    | SETTRK   | return the number of current track |
 | 0x84    | SETSEC   | return the number of current sector |
-| 0x85    | DISKIO   | read the sector, must to read sector length continuously |
+| 0x85    | DISKIO   | read the current sector, must to read sector length continuously |
 | 0x86    | ----     | Not Implemented yet |
 | 0x87    | ----     | Not Implemented yet |
 | 0x88    | ----     | Not Implemented yet |
-| 0x89    | ----     | Not Implemented yet |
+| 0x89    | (UPTIME) | Not Implemented yet |
 | 0x8A    | RTC      | read RTC |
-| 0x8B    | I2CTRANS | return the result of transmit |
+| 0x8B    | I2CTRANS | return the result of transmit() of i2c |
 | 0x8C    | I2CREQ   | return the result of available() of i2c |
 | 0x8D    | I2CDATA  | read from i2c |
 | 0x8E    | BANK     | return the current bank of SRAM |
-| 0x8F    | misc output | return the binary data for IPL |
+| 0x8F    | MISC     | return the binary data for IPL |
+
+#### UARTST
+| bit | Description |
+|-----|-------------|
+| 7-2 | Not used |
+| 1   | Tx condition, 1: able to transmit, 0: busy |
+| 0   | Rx condition, 1: able to receive, 0: no char |
 
 ### for WRITE
 | Address | Function | Description |
@@ -142,19 +153,19 @@ About floppy-disk emulation, the default setting is set as _ibm-3740_ format as 
 | 0x82    | SELDSK   | select the current disk |
 | 0x83    | SETTRK   | set the current track |
 | 0x84    | SETSEC   | set the current sector |
-| 0x85    | DISKIO   | write the sector, must to write sector length continuously |
+| 0x85    | DISKIO   | write the current sector, must to write sector length continuously |
 | 0x86    | ----     | Not Implemented yet |
 | 0x87    | ----     | Not Implemented yet |
 | 0x88    | ----     | Not Implemented yet |
-| 0x89    | ----     | Not Implemented yet |
+| 0x89    | (UPTIME) | Not Implemented yet |
 | 0x8A    | RTC      | write RTC |
-| 0x8B    | I2CTRANS | send transmit to i2c |
-| 0x8C    | I2CREQ   | send request to i2c |
+| 0x8B    | I2CTRANS | send transmit() to i2c |
+| 0x8C    | I2CREQ   | send request() to i2c |
 | 0x8D    | I2CDATA  | write into i2c |
 | 0x8E    | BANK     | set the current bank of SRAM |
-| 0x8F    | misc input ||
+| 0x8F    | MISC | input |
 
-misc input
+#### MISC input
 | value | description |
 |-------|-------------|
 | 0x00  | set the dummy data 0x00 |
@@ -169,7 +180,7 @@ misc input
 * Microchip ATMEGA4809
   * [ATMEGA4809](https://www.microchip.com/en-us/product/atmega4809)
   * [Datasheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/ATmega4808-09-DataSheet-DS40002173C.pdf)
-* Other Project
+* Other Projects
   * [Z80MBC2](https://github.com/SuperFabius/Z80-MBC2)
   * [Z80MBC3](https://github.com/eprive/Z80-MBC3)
 
