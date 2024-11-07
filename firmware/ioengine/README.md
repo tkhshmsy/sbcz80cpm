@@ -11,6 +11,30 @@ the I/O device for sbcz80cpm powered by [ATMEGA4809](https://www.microchip.com/e
   * RTC
   * communicate with I2C devices
 
+## Requirements
+* [platformio](https://platformio.org/)
+  * cross development platform for embedded systems
+* [pymcuprog](https://github.com/microchip-pic-avr-tools/pymcuprog)
+  * serial to UPDI programmer for AVR
+
+## Build
+use platformio.
+* modify `platformio.ini` if it needs
+
+```bash
+## only once, write the fuse to enable H/W RESET.
+$ pio run -t fuses
+
+## compile
+$ pio run
+
+## compile and upload
+$ pio run -t upload
+```
+
+References,
+* [PlatformIO Community/Hardware reset on AVR 4809](https://community.platformio.org/t/hardware-reset-on-avr-4809/24219)
+
 ## Design
 
 ### Connections
