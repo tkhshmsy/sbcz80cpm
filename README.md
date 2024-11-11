@@ -19,14 +19,15 @@ Single Board Computer with Z80 for CP/M
 ## BOM
 | Ref | Name | Qty | Description | Package | Link |
 | --- | ---- | --- | ----------- | ------- | ---- |
-| U1 | Z80 | 1 | Z80 CPU | DIP40 | Z84C00*, uPD780C |
+| U1 | Z80 | 1 | Z80 CPU | DIP40 | Zilog Z84C00*, NEC uPD780C |
 | U2 | 74HC32 | 1 | Quad OR | DIP14 | [akizuki](https://akizukidenshi.com/catalog/g/g112877/)|
 | U3 | ATMEGA4809 | 1 | ATMEGA4809 | PDIP40 | [akizuki](https://akizukidenshi.com/catalog/g/g116144/)|
 | U4 | AS6C4008 | 1 | SRAM | DIP32 | [mouser](https://www.mouser.jp/ProductDetail/Alliance-Memory/AS6C4008-55PCN?qs=E5c5%252Bmu3i3%252BMOyro1Tlhzg%3D%3D)|
 | X1 | 1-10MHz | 1 | Crystal OSC | DIP8 | [akizuki 8MHz](https://akizukidenshi.com/catalog/g/g117022/), [akizuki 10MHz](https://akizukidenshi.com/catalog/g/g117023/)|
 | C1, C2, C3, C4, C5, C6, C7, C8, C9 | 0.1uF | 9 | | ||
 | C10  | 470uF    | 1 | | ||
-| R1, R2 | 10K | 2 | for pullup | ||
+| R1 | 1K-10K | 1 | for /WAIT control, 10K(-5MHz), 1K(8MHz-)| ||
+| R2 | 10K | 1 | for pullup | ||
 | R3, R4 | 10K | 2 | for I2C pullup | ||
 | R5 | 1K | 1 | for LED | ||
 | RN1 | 10Kx4 | 1 | for pullup | |[akizuki](https://akizukidenshi.com/catalog/g/g111909/)|
@@ -63,10 +64,10 @@ Single Board Computer with Z80 for CP/M
 
 # License
 * MIT
-  * contains followings
-    * PCB
-    * firmware of I/O Engine
-    * boot loaders
+  * contains follows
+    * schematics and PCB
+    * firmware `I/O Engine`
+    * boot loaders and customized bios
   * the others are NOT included.
 
 # Author

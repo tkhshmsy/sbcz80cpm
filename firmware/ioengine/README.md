@@ -2,6 +2,8 @@
 
 the I/O device for sbcz80cpm powered by [ATMEGA4809](https://www.microchip.com/en-us/product/atmega4809).
 
+![I/O Engine](resources/sbcz80cpm-ioengine010.png)
+
 ## Features
 * Boot control
   * provides IPL for no ROM / full RAM system
