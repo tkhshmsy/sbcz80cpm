@@ -1,6 +1,8 @@
 # sbcz80cpm
 Single Board Computer with Z80 for CP/M
 
+![photo](resources/sbcz80cpm-rev1-photo.jpg)
+
 # Features
 * Z80 cpu board for CP/M, without any ROM chips
   * supports 128KB to 512KB of SRAM, banked in 32KB
